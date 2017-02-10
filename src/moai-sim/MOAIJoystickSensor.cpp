@@ -13,6 +13,10 @@ public:
 
 	float	mX;
 	float	mY;
+	// WHICH JOYSTICK IS IT?
+	int		mWhich;
+	// 1-BUTTON_DOWN, 2-BUTTON_UP, 3-AXIS, 4-NUM_JOYS, 5-JOY_ADD, 6-JOY_REMOVE, 7-NAME, 8-NUM_AXIS, 9-NUM_BUTTONS, 10-NUM_BALLS
+	int		mEvent; 
 };
 
 //================================================================//
@@ -32,7 +36,9 @@ int MOAIJoystickSensor::_getVector ( lua_State* L ) {
 	
 	lua_pushnumber ( state, self->mX );
 	lua_pushnumber ( state, self->mY );
-	return 2;
+	lua_pushnumber ( state, self->mWhich );
+	lua_pushnumber ( state, self->mEvent );
+	return 4;
 }
 
 //----------------------------------------------------------------//
@@ -56,12 +62,14 @@ int MOAIJoystickSensor::_setCallback ( lua_State* L ) {
 //================================================================//
 
 //----------------------------------------------------------------//
-void MOAIJoystickSensor::EnqueueJoystickEvent( u8 deviceID, u8 sensorID, float x, float y ) {
+void MOAIJoystickSensor::EnqueueJoystickEvent( u8 deviceID, u8 sensorID, float x, float y, int which, int event ) {
 
 	MOAIInputMgr& inputMgr = MOAIInputMgr::Get ();
 	if ( inputMgr.WriteEventHeader < MOAIJoystickSensor >( deviceID, sensorID )) {
 		inputMgr.Write < float >( x );
 		inputMgr.Write < float >( y );
+		inputMgr.Write < int >( which );
+		inputMgr.Write < int >( event );
 	}
 }
 
@@ -80,12 +88,16 @@ void MOAIJoystickSensor::ParseEvent ( ZLStream& eventStream ) {
 
 	this->mX = eventStream.Read < float >( 0.0f );
 	this->mY = eventStream.Read < float >( 0.0f );
-	
+	this->mWhich = eventStream.Read < int >( 0 );
+	this->mEvent = eventStream.Read < int >( 0 );
+		
 	if ( this->mOnStick ) {
 		MOAIScopedLuaState state = this->mOnStick.GetSelf ();
 		lua_pushnumber ( state, this->mX );
 		lua_pushnumber ( state, this->mY );
-		state.DebugCall ( 2, 0 );
+		lua_pushnumber ( state, this->mWhich );
+		lua_pushnumber ( state, this->mEvent );
+		state.DebugCall ( 4, 0 );
 	}
 }
 
